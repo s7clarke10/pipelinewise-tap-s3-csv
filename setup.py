@@ -22,7 +22,7 @@ setup(name='pipelinewise-tap-s3-csv',
           'pipelinewise-singer-python==2.0.*',
           # Public repository
           'singer-encodings @ git+https://github.com/s7clarke10/singer-encodings.git',
-          'voluptuous==0.13.1',
+          'voluptuous==0.14.1',
           'ujson==5.8.0',
           'messytables @ git+https://github.com/s7clarke10/messytables.git',
           'more_itertools>=8.12,<10.2',
