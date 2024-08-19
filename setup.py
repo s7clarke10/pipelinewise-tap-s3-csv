@@ -25,7 +25,7 @@ setup(name='pipelinewise-tap-s3-csv',
           'voluptuous==0.14.2',
           'msgspec==0.18.6',
           'messytables @ git+https://github.com/s7clarke10/messytables@0.15.4',
-          'more_itertools>=8.12,<10.2',
+          'more_itertools>=8.12,<10.5',
       ],
       extras_require={
           'dev': [
