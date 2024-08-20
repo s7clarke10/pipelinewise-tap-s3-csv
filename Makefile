@@ -11,6 +11,7 @@ venv:
 	. ./venv/bin/activate ;\
 	pip install --upgrade pip;\
 	pip install .;\
+	pip install poetry;\
 	poetry install
 
 pylint:
