@@ -9,8 +9,9 @@ TAP_S3_CSV_BUCKET=awesome_bucket
 venv:
 	python3 -m venv venv ;\
 	. ./venv/bin/activate ;\
-	pip install --upgrade pip setuptools wheel;\
-	pip install -e .[test]
+	pip install --upgrade pip;\
+	pip install .
+	poetry install
 
 pylint:
 	. ./venv/bin/activate ;\
