@@ -1,0 +1,87 @@
+
+[tool.poetry]
+name = "pipelinewise-tap-s3-csv"
+version = "3.0.0"
+description = "Singer.io tap for extracting CSV files from S3 - PipelineWise and Meltano compatible"
+authors = []
+license = "GNU General Public License (GPL) 2.0 & 3.0"
+readme = "README.md"
+homepage = "https://github.com/s7clarke10/pipelinewise-tap-s3-csv"
+repository = "https://github.com/s7clarke10/pipelinewise-tap-s3-csv"
+keywords = ["singer", "meltano", "pipelinewise", "csv"]
+classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    # Specify the Python versions you support here.
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Development Status :: 5 - Production/Stable", "Topic :: Database"
+]
+packages = [
+    { include = "tap_s3_csv" }
+]
+include = [
+    { path = "CHANGELOG.md", format = ["sdist", "wheel"] }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.13"
+realit_singer_python = "^5.0.0"
+boto3 = "1.34.158"
+realit-singer-encodings = ">=2.1.0"
+voluptuous = "0.14.2"
+ujson = ">=5.4.0"
+more_itertools = ">=8.12,<10.2"
+
+[tool.poetry.dev-dependencies]
+ipdb = "0.13.13"
+pylint = "3.2.5"
+pytest = "8.*"
+coverage = ">= 6.3, < 8.0"
+ipython = "^8.12.1"
+tox = "^4.17.1"
+flake8 = { version = "^7.1.0", python = ">=3.8.1" }
+black = "^24.4.2"
+pydocstyle = "^6.3.0"
+mypy = "^1.10.1"
+isort = "^5.13.2"
+
+[tool.black]
+line-length = 120
+
+[tool.coverage.paths]
+source = ["tap_s3_csv"]
+
+[tool.coverage.run]
+branch = true
+source = ["tap_s3_csv"]
+
+[tool.coverage.report]
+fail_under = 76.0
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+src_paths = "tap_s3_csv"
+use_parentheses = true
+known_first_party = "tap_s3_csv"
+include_trailing_comma = true
+add_imports = [
+    "from __future__ import annotations",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-v --doctest-modules"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+tap-s3-csv = "tap_s3_csv.__init__:main"
+

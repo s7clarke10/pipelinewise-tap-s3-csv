@@ -84,11 +84,11 @@ def get_sampled_schema_for_table(config: Dict, table_spec: Dict) -> Dict:
     s3_files_gen = get_input_files_for_table(config, table_spec, modified_since)
 
     if table_spec.get('guess_types',True):
-      samples = list(sample_files(config, table_spec, s3_files_gen))
+        samples = list(sample_files(config, table_spec, s3_files_gen))
     else:
-      LOGGER.info('Guess Types is off - sampling for header names only')
-      samples = list(sample_files(config, table_spec, s3_files_gen,
-                 sample_rate = 1, max_records = 1, max_files = 1))
+        LOGGER.info('Guess Types is off - sampling for header names only')
+        samples = list(sample_files(config, table_spec, s3_files_gen,
+                   sample_rate = 1, max_records = 1, max_files = 1))
 
     if not samples:
         return {}

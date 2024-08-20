@@ -14,7 +14,7 @@ venv:
 
 pylint:
 	. ./venv/bin/activate ;\
-	pylint --rcfile .pylintrc tap_s3_csv/
+	pylint --rcfile pylintrc tap_s3_csv/
 
 unit_tests:
 	. ./venv/bin/activate ;\
