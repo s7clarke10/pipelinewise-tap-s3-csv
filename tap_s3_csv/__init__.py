@@ -62,10 +62,14 @@ def do_sync(config: Dict, catalog: Dict, state: Dict) -> None:
         stream_name = stream['tap_stream_id']
         mdata = metadata.to_map(stream['metadata'])
         try:
-            table_spec = next(s for s in config['tables'] if s['table_name'] + config.get("table_suffix","") == stream_name)
-        except StopIteration:
+            table_spec = next(
+                s
+                for s in config["tables"]
+                if s["table_name"] + config.get("table_suffix", "") == stream_name
+            )
+        except StopIteration as e:
             if not config.get('warning_if_no_files', False):
-                raise Exception(f"Expected table {stream_name} not found in catalog")
+                raise Exception(f"Expected table {stream_name} not found in catalog") from e
         if not stream_is_selected(mdata):
             LOGGER.info("%s: Skipping - not selected", stream_name)
             continue

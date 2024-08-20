@@ -52,23 +52,23 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
     return records_streamed
 
 
-def set_empty_values_null(x):
+def set_empty_values_null(input_row):
     """
     Looks for empty values in the arg and sets to None. This will cause the 
     results to be treated like a null value when dumped via json.dumps. This is how
     data coming from a database looks. This is useful for targets like target-snowflake
     values can be empty i.e. null in the database rather than an empty string.
     """
-    ret = copy.deepcopy(x)
+    ret = copy.deepcopy(input_row)
     # Handle dictionaries, lists & tuples. Scrub all values
-    if isinstance(x, dict):
-        for k, v in ret.items():
-            ret[k] = set_empty_values_null(v)
-    if isinstance(x, (list, tuple)):
-        for k, v in enumerate(ret):
-            ret[k] = set_empty_values_null(v)
+    if isinstance(input_row, dict):
+        for dict_key, dict_value in ret.items():
+            ret[dict_key] = set_empty_values_null(dict_value)
+    if isinstance(input_row, (list, tuple)):
+        for dict_key, dict_value in enumerate(ret):
+            ret[dict_key] = set_empty_values_null(dict_value)
     # If value is empty or all spaces convert to None
-    if x == '' or str(x).isspace():
+    if input_row == '' or str(input_row).isspace():
         ret = None
     # Finished scrubbing
     return ret
