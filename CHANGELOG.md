@@ -4,6 +4,9 @@
   - Deprecating messytables and defaulting headers by default to string datatype
   - Adding ci tests and minio to run integration tests against pseduo s3 bucket
   - Fix to exclude filter out glacier objects from ingestion
+  - Add tox framework for testing
+  - Add optional integration via minio
+  - Moving from setup tools to poetry via pyproject.toml
 
 2.1.2 (2024-08-09)
 -------------------
