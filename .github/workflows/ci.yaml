@@ -22,7 +22,7 @@ jobs:
 
       - name: Start Minio server
         run: |
-          mkdir -p ./minio/data/awesome_bucket
+          mkdir -p ./minio/data/awesome-bucket
           docker compose up -d
 
       - name: Set up Python ${{ matrix.python-version }}
