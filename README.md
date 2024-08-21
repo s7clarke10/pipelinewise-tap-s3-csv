@@ -117,15 +117,27 @@ A sample configuration is available inside [config.sample.json](config.sample.js
 
 ### To run tests:
 
-1. Install python test dependencies in a virtual env and run nose unit and integration tests
-```
-  make venv
+1. Create tests within the `tests/` directory and
+then run:
+
+```bash
+poetry run pytest
 ```
 
-2. To run unit tests:
+or 
+
+```bash
+poetry run coverage run --parallel -m pytest
 ```
-  make unit_tests
+
+### Continuous Integration
+2. Run through the full suite of tests and linters by running
+
+```bash
+poetry run tox
 ```
+
+These must pass in order for PR's to be merged.
 
 3. To run integration tests:
 
