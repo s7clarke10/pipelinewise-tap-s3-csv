@@ -120,14 +120,13 @@ A sample configuration is available inside [config.sample.json](config.sample.js
 1. Create tests within the `tests/` directory and
 then run:
 
-```bash
-poetry run pytest
+```
+  make venv
 ```
 
-or 
-
-```bash
-poetry run coverage run --parallel -m pytest
+Followed by a run of unit tests:
+```
+  make unit_tests
 ```
 
 ### Continuous Integration
