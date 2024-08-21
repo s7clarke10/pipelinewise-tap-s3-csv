@@ -1,23 +1,26 @@
 """
 Modules containing all AWS S3 related features
 """
-from __future__ import division
 
-import os
+from __future__ import annotations, division
+
 import itertools
-import more_itertools
+import os
 import re
+from typing import Dict, Generator, Iterator, List, Optional
+
 import backoff
 import boto3
+import more_itertools
 from botocore.config import Config
-
 from botocore.exceptions import ClientError
-from singer_encodings.csv import get_row_iterator, SDC_EXTRA_COLUMN  # pylint:disable=no-name-in-module
 from singer import get_logger, utils
-from typing import Dict, Generator, Optional, Iterator, List
+from singer_encodings.csv import (  # pylint:disable=no-name-in-module
+    SDC_EXTRA_COLUMN,
+    get_row_iterator,
+)
 
-
-LOGGER = get_logger('tap_s3_csv')
+LOGGER = get_logger("tap_s3_csv")
 
 SDC_SOURCE_BUCKET_COLUMN = "_sdc_source_bucket"
 SDC_SOURCE_FILE_COLUMN = "_sdc_source_file"
@@ -29,11 +32,13 @@ def retry_pattern():
     Retry decorator to retry failed functions
     :return:
     """
-    return backoff.on_exception(backoff.expo,
-                                ClientError,
-                                max_tries=5,
-                                on_backoff=log_backoff_attempt,
-                                factor=10)
+    return backoff.on_exception(
+        backoff.expo,
+        ClientError,
+        max_tries=5,
+        on_backoff=log_backoff_attempt,
+        factor=10,
+    )
 
 
 def log_backoff_attempt(details):
@@ -42,7 +47,10 @@ def log_backoff_attempt(details):
     :param details:
     :return:
     """
-    LOGGER.info("Error detected communicating with Amazon, triggering backoff: %d try", details.get("tries"))
+    LOGGER.info(
+        "Error detected communicating with Amazon, triggering backoff: %d try",
+        details.get("tries"),
+    )
 
 
 @retry_pattern()
@@ -54,17 +62,23 @@ def setup_aws_client(config: Dict) -> None:
     LOGGER.info("Attempting to create AWS session")
 
     # Get the required parameters from config file and/or environment variables
-    aws_access_key_id = config.get('aws_access_key_id') or os.environ.get('AWS_ACCESS_KEY_ID')
-    aws_secret_access_key = config.get('aws_secret_access_key') or os.environ.get('AWS_SECRET_ACCESS_KEY')
-    aws_session_token = config.get('aws_session_token') or os.environ.get('AWS_SESSION_TOKEN')
-    aws_profile = config.get('aws_profile') or os.environ.get('AWS_PROFILE')
+    aws_access_key_id = config.get("aws_access_key_id") or os.environ.get(
+        "AWS_ACCESS_KEY_ID"
+    )
+    aws_secret_access_key = config.get(
+        "aws_secret_access_key"
+    ) or os.environ.get("AWS_SECRET_ACCESS_KEY")
+    aws_session_token = config.get("aws_session_token") or os.environ.get(
+        "AWS_SESSION_TOKEN"
+    )
+    aws_profile = config.get("aws_profile") or os.environ.get("AWS_PROFILE")
 
     # AWS credentials based authentication
     if aws_access_key_id and aws_secret_access_key:
         boto3.setup_default_session(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
-            aws_session_token=aws_session_token
+            aws_session_token=aws_session_token,
         )
     # AWS Profile based authentication
     else:
@@ -78,33 +92,41 @@ def get_sampled_schema_for_table(config: Dict, table_spec: Dict) -> Dict:
     :param table_spec: tables specs
     :return: detected schema
     """
-    LOGGER.info('Sampling records to determine table schema.')
+    LOGGER.info("Sampling records to determine table schema.")
 
-    modified_since = utils.strptime_with_tz(config['start_date'])
+    modified_since = utils.strptime_with_tz(config["start_date"])
     s3_files_gen = get_input_files_for_table(config, table_spec, modified_since)
 
-    if table_spec.get('guess_types',True):
+    if table_spec.get("guess_types", True):
         samples = list(sample_files(config, table_spec, s3_files_gen))
     else:
-        LOGGER.info('Guess Types is off - sampling for header names only')
-        samples = list(sample_files(config, table_spec, s3_files_gen,
-                   sample_rate = 1, max_records = 1, max_files = 1))
+        LOGGER.info("Guess Types is off - sampling for header names only")
+        samples = list(
+            sample_files(
+                config,
+                table_spec,
+                s3_files_gen,
+                sample_rate=1,
+                max_records=1,
+                max_files=1,
+            )
+        )
 
     if not samples:
         return {}
 
     metadata_schema = {
-        SDC_SOURCE_BUCKET_COLUMN: {'type': 'string'},
-        SDC_SOURCE_FILE_COLUMN: {'type': 'string'},
-        SDC_SOURCE_LINENO_COLUMN: {'type': 'integer'},
-        SDC_EXTRA_COLUMN: {'type': 'array', 'items': {'type': 'string'}},
+        SDC_SOURCE_BUCKET_COLUMN: {"type": "string"},
+        SDC_SOURCE_FILE_COLUMN: {"type": "string"},
+        SDC_SOURCE_LINENO_COLUMN: {"type": "integer"},
+        SDC_EXTRA_COLUMN: {"type": "array", "items": {"type": "string"}},
     }
 
     data_schema = generate_schema(samples, table_spec)
 
     return {
-        'type': 'object',
-        'properties': merge_dicts(data_schema, metadata_schema)
+        "type": "object",
+        "properties": merge_dicts(data_schema, metadata_schema),
     }
 
 
@@ -117,14 +139,14 @@ def generate_schema(samples: List[Dict], table_spec: Dict) -> Dict:
     :return: json schema dictionary representing  the table
     """
     schema = {}
-    date_overrides = set(table_spec.get('date_overrides', []))
+    date_overrides = set(table_spec.get("date_overrides", []))
 
     for sample in samples:
         for header in sample.keys():
-            schema[header] = {'type': ['null', 'string']}
+            schema[header] = {"type": ["null", "string"]}
 
             if header in date_overrides:
-                schema[header]['format'] = 'date-time'
+                schema[header]["format"] = "date-time"  # type: ignore
 
     return schema
 
@@ -151,7 +173,9 @@ def merge_dicts(first: Dict, second: Dict) -> Dict:
     return to_return
 
 
-def sample_file(config: Dict, table_spec: Dict, s3_path: str, sample_rate: int) -> Generator:
+def sample_file(
+    config: Dict, table_spec: Dict, s3_path: str, sample_rate: int
+) -> Generator:
     """
     Get a sample data from the given S3 file
     :param config:
@@ -162,7 +186,9 @@ def sample_file(config: Dict, table_spec: Dict, s3_path: str, sample_rate: int) 
     """
     file_handle = get_file_handle(config, s3_path)
     # _raw_stream seems like the wrong way to access this..
-    iterator = get_row_iterator(file_handle._raw_stream, table_spec)  # pylint:disable=protected-access
+    iterator = get_row_iterator(
+        file_handle._raw_stream, table_spec
+    )  # pylint:disable=protected-access
 
     current_row = 0
 
@@ -181,26 +207,34 @@ def sample_file(config: Dict, table_spec: Dict, s3_path: str, sample_rate: int) 
                 row.pop(SDC_EXTRA_COLUMN)
             sampled_row_count += 1
             if (sampled_row_count % 200) == 0:
-                LOGGER.info("Sampled %s rows from %s",
-                            sampled_row_count, s3_path)
+                LOGGER.info(
+                    "Sampled %s rows from %s", sampled_row_count, s3_path
+                )
             yield row
 
         current_row += 1
 
     if not has_rows:
         if headers:
-            LOGGER.info("No records, just empty file with headers. Yielding header row to create an empty file")
+            LOGGER.info(
+                "No records, just empty file with headers. Yielding header "
+                "row to create an empty file"
+            )
             row = dict.fromkeys(headers)
             yield row
 
-    LOGGER.info("Sampled %s rows from %s",
-                sampled_row_count,
-                s3_path)
+    LOGGER.info("Sampled %s rows from %s", sampled_row_count, s3_path)
 
 
 # pylint: disable=too-many-arguments
-def sample_files(config: Dict, table_spec: Dict, s3_files: Generator,
-                 sample_rate: int = 5, max_records: int = 1000, max_files: int = 5) -> Generator:
+def sample_files(
+    config: Dict,
+    table_spec: Dict,
+    s3_files: Generator,
+    sample_rate: int = 5,
+    max_records: int = 1000,
+    max_files: int = 5,
+) -> Generator:
     """
     Get samples from all files
     :param config:
@@ -213,49 +247,71 @@ def sample_files(config: Dict, table_spec: Dict, s3_files: Generator,
     """
     LOGGER.info("Sampling files (max files: %s)", max_files)
     for s3_file in more_itertools.tail(max_files, s3_files):
-        LOGGER.info('Sampling %s (max records: %s, sample rate: %s)',
-                    s3_file['key'],
-                    max_records,
-                    sample_rate)
-        yield from itertools.islice(sample_file(config, table_spec, s3_file['key'], sample_rate), max_records)
+        LOGGER.info(
+            "Sampling %s (max records: %s, sample rate: %s)",
+            s3_file["key"],
+            max_records,
+            sample_rate,
+        )
+        yield from itertools.islice(
+            sample_file(config, table_spec, s3_file["key"], sample_rate),
+            max_records,
+        )
 
 
-def get_input_files_for_table(config: Dict, table_spec: Dict, modified_since: str = None) -> Generator:
+def get_input_files_for_table(
+    config: Dict, table_spec: Dict, modified_since: Optional[str] = None
+) -> Generator:
     """
-    Gets all files that match the search pattern in table specs and were modified after modified since
+    Gets all files that match the search pattern in table specs and were
+    modified after modified since
     :param config: tap config
     :param table_spec: table specs
     :param modified_since: string date
     :returns: generator containing all the found files
     """
-    bucket = config['bucket']
-    warning_if_no_files = config.get('warning_if_no_files', False)
+    bucket = config["bucket"]
+    warning_if_no_files = config.get("warning_if_no_files", False)
 
-    prefix = table_spec.get('search_prefix')
-    pattern = table_spec['search_pattern']
+    prefix = table_spec.get("search_prefix")
+    pattern = table_spec["search_pattern"]
     try:
         matcher = re.compile(pattern)
     except re.error as err:
         raise ValueError(
-            (f"search_pattern for table `{table_spec['table_name']}` is not a valid regular "
-             "expression. See https://docs.python.org/3.5/library/re.html#regular-expression-syntax"),
-            pattern) from err
+            (
+                f"search_pattern for table `{table_spec['table_name']}` "
+                "is not a valid regular "
+                "expression. See "
+                "https://docs.python.org/3.5/library/re.html"
+                "#regular-expression-syntax"
+            ),
+            pattern,
+        ) from err
 
     LOGGER.info('Checking bucket "%s" for keys matching "%s"', bucket, pattern)
-    LOGGER.info('Skipping files which have a LastModified value older than %s', modified_since)
+    LOGGER.info(
+        "Skipping files which have a LastModified value older than %s",
+        modified_since,
+    )
 
     matched_files_count = 0
     unmatched_files_count = 0
     max_files_before_log = 30000
-    for s3_object in sorted(list_files_in_bucket(bucket,
-                                                prefix,
-                                                aws_endpoint_url=config.get('aws_endpoint_url'),
-                                                s3_proxies = config.get('s3_proxies')),
-                            key=lambda item: item['LastModified'], reverse=False):
-        key = s3_object['Key']
-        last_modified = s3_object['LastModified']
+    for s3_object in sorted(
+        list_files_in_bucket(
+            bucket,
+            prefix,
+            aws_endpoint_url=config.get("aws_endpoint_url"),
+            s3_proxies=config.get("s3_proxies"),
+        ),
+        key=lambda item: item["LastModified"],
+        reverse=False,
+    ):
+        key = s3_object["Key"]
+        last_modified = s3_object["LastModified"]
 
-        if s3_object['Size'] == 0:
+        if s3_object["Size"] == 0:
             LOGGER.info('Skipping matched file "%s" as it is empty', key)
             unmatched_files_count += 1
             continue
@@ -263,44 +319,66 @@ def get_input_files_for_table(config: Dict, table_spec: Dict, modified_since: st
         if matcher.search(key):
             matched_files_count += 1
             if modified_since is None or modified_since < last_modified:
-                LOGGER.info('Will download key "%s" as it was last modified %s',
-                            key,
-                            last_modified)
-                yield {'key': key, 'last_modified': last_modified}
+                LOGGER.info(
+                    'Will download key "%s" as it was last modified %s',
+                    key,
+                    last_modified,
+                )
+                yield {"key": key, "last_modified": last_modified}
         else:
             unmatched_files_count += 1
 
-        if (unmatched_files_count + matched_files_count) % max_files_before_log == 0:
+        if (
+            unmatched_files_count + matched_files_count
+        ) % max_files_before_log == 0:
             # Are we skipping greater than 50% of the files?
-            if (unmatched_files_count / (matched_files_count + unmatched_files_count)) > 0.5:
-                LOGGER.warning(("Found %s matching files and %s non-matching files. "
-                                "You should consider adding a `search_prefix` to the config "
-                                "or removing non-matching files from the bucket."),
-                               matched_files_count, unmatched_files_count)
+            if (
+                unmatched_files_count
+                / (matched_files_count + unmatched_files_count)
+            ) > 0.5:
+                LOGGER.warning(
+                    (
+                        "Found %s matching files and %s non-matching files. "
+                        "You should consider adding a `search_prefix` "
+                        "to the config "
+                        "or removing non-matching files from the bucket."
+                    ),
+                    matched_files_count,
+                    unmatched_files_count,
+                )
             else:
-                LOGGER.info("Found %s matching files and %s non-matching files",
-                            matched_files_count, unmatched_files_count)
+                LOGGER.info(
+                    "Found %s matching files and %s non-matching files",
+                    matched_files_count,
+                    unmatched_files_count,
+                )
 
     if matched_files_count == 0:
         if warning_if_no_files:
             LOGGER.warning(
-                f'No files found in bucket "{bucket}" that matches prefix "{prefix}" and pattern "{pattern}"'
+                f'No files found in bucket "{bucket}" that matches prefix "'
+                '{prefix}" and pattern "{pattern}"'
             )
         else:
             if prefix:
                 raise Exception(
-                    f'No files found in bucket "{bucket}" that matches prefix "{prefix}" and pattern "{pattern}"'
+                    f'No files found in bucket "{bucket}" that matches prefix '
+                    '"{prefix}" and pattern "{pattern}"'
                 )
 
-            raise Exception(f'No files found in bucket "{bucket}" that matches pattern "{pattern}"')
+            raise Exception(
+                f'No files found in bucket "{bucket}" that matches pattern '
+                '"{pattern}"'
+            )
 
 
 @retry_pattern()
 def list_files_in_bucket(
     bucket: str,
-    search_prefix: str = None,
+    search_prefix: Optional[str] = None,
     aws_endpoint_url: Optional[str] = None,
-    s3_proxies: Optional[dict] = None) -> Generator:
+    s3_proxies: Optional[dict] = None,
+) -> Generator:
     """
     Gets all files in the given S3 bucket that match the search prefix
     :param bucket: S3 bucket name
@@ -313,31 +391,39 @@ def list_files_in_bucket(
     # override default endpoint for non aws s3 services
     if aws_endpoint_url is not None:
         if s3_proxies is None:
-            s3_client = boto3.client('s3', endpoint_url=aws_endpoint_url)
+            s3_client = boto3.client("s3", endpoint_url=aws_endpoint_url)
         else:
-            # override proxies in environment variables to use config supplied proxies. Set to {} to not use proxy.
-            s3_client = boto3.client('s3', endpoint_url=aws_endpoint_url, config=Config(proxies=s3_proxies))
+            # override proxies in environment variables to use config supplied
+            # proxies. Set to {} to not use proxy.
+            s3_client = boto3.client(
+                "s3",
+                endpoint_url=aws_endpoint_url,
+                config=Config(proxies=s3_proxies),
+            )
     else:
         if s3_proxies is None:
-            s3_client = boto3.client('s3')
+            s3_client = boto3.client("s3")
         else:
-            # override proxies in environment variables to use config supplied proxies. Set to {} to not use proxy.
-            s3_client = boto3.client('s3', config=Config(proxies=s3_proxies))
+            # override proxies in environment variables to use config supplied
+            # proxies. Set to {} to not use proxy.
+            s3_client = boto3.client("s3", config=Config(proxies=s3_proxies))
 
     s3_object_count = 0
 
     max_results = 1000
     args = {
-        'Bucket': bucket,
-        'MaxKeys': max_results,
+        "Bucket": bucket,
+        "MaxKeys": max_results,
     }
 
     if search_prefix is not None:
-        args['Prefix'] = search_prefix
+        args["Prefix"] = search_prefix
 
-    paginator = s3_client.get_paginator('list_objects_v2')
+    paginator = s3_client.get_paginator("list_objects_v2")
     page_iterator = paginator.paginate(**args)
-    filtered_s3_objects = page_iterator.search("Contents[?StorageClass=='STANDARD']")
+    filtered_s3_objects = page_iterator.search(
+        "Contents[?StorageClass=='STANDARD']"
+    )
 
     for s3_obj in filtered_s3_objects:
         s3_object_count += 1
@@ -347,7 +433,11 @@ def list_files_in_bucket(
     if s3_object_count > 0:
         LOGGER.info("Found %s files.", s3_object_count)
     else:
-        LOGGER.warning('Found no files for bucket "%s" that match prefix "%s"', bucket, search_prefix)
+        LOGGER.warning(
+            'Found no files for bucket "%s" that match prefix "%s"',
+            bucket,
+            search_prefix,
+        )
 
 
 @retry_pattern()
@@ -358,24 +448,30 @@ def get_file_handle(config: Dict, s3_path: str) -> Iterator:
     :param s3_path: file path in S3
     :return: file Body iterator
     """
-    bucket = config['bucket']
-    aws_endpoint_url = config.get('aws_endpoint_url')
-    s3_proxies = config.get('s3_proxies')
+    bucket = config["bucket"]
+    aws_endpoint_url = config.get("aws_endpoint_url")
+    s3_proxies = config.get("s3_proxies")
 
     # override default endpoint for non aws s3 services
     if aws_endpoint_url is not None:
         if s3_proxies is None:
-            s3_client = boto3.resource('s3', endpoint_url=aws_endpoint_url)
+            s3_client = boto3.resource("s3", endpoint_url=aws_endpoint_url)
         else:
-            # override proxies in environment variables to use config supplied proxies. Set to {} to not use proxy.
-            s3_client = boto3.resource('s3', endpoint_url=aws_endpoint_url, config=Config(proxies=s3_proxies))
+            # override proxies in environment variables to use config supplied
+            # proxies. Set to {} to not use proxy.
+            s3_client = boto3.resource(
+                "s3",
+                endpoint_url=aws_endpoint_url,
+                config=Config(proxies=s3_proxies),
+            )
     else:
         if s3_proxies is None:
-            s3_client = boto3.resource('s3')
+            s3_client = boto3.resource("s3")
         else:
-            # override proxies in environment variables to use config supplied proxies. Set to {} to not use proxy.
-            s3_client = boto3.resource('s3', config=Config(proxies=s3_proxies))
+            # override proxies in environment variables to use config supplied
+            # proxies. Set to {} to not use proxy.
+            s3_client = boto3.resource("s3", config=Config(proxies=s3_proxies))
 
     s3_bucket = s3_client.Bucket(bucket)
     s3_object = s3_bucket.Object(s3_path)
-    return s3_object.get()['Body']
+    return s3_object.get()["Body"]
