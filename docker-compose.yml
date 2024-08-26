@@ -1,14 +1,14 @@
 services:
   minio_server:
     image: "minio/minio"
-    container_name: "minio_sever"
+    container_name: "minio_server"
     ports:
       - "9000:9000"
       - "9090:9090"
     user: "${UID}:${GID}"
     environment:
       MINIO_ROOT_USER: ACCESS_KEY
-      MINIO_ROOT_PASSWORD: SECRET_ACCESS_KEY
+      MINIO_ROOT_PASSWORD: SECRET_ACCESS_KEY123
     volumes:
       - ./minio/data:/data
     command: server /data --console-address :9090

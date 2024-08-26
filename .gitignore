@@ -101,3 +101,6 @@ Pipfile.lock
 # tap config and property files
 config.json
 properties.json
+
+# minio
+minio/
