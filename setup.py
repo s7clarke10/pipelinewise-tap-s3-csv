@@ -18,7 +18,7 @@ setup(name='pipelinewise-tap-s3-csv',
       ],
       py_modules=['tap_s3_csv'],
       install_requires=[
-          'boto3==1.34.158',
+          'boto3==1.35.5',
           'realit-singer-python>=5.0.0',
           # Public repository
           'realit-singer-encodings>=2.1.0',
