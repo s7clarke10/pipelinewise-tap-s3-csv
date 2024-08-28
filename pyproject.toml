@@ -29,7 +29,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.8,<3.13"
 realit_singer_python = "^5.0.0"
-boto3 = "1.34.158"
+boto3 = "1.35.8"
 realit-singer-encodings = ">=2.1.0"
 voluptuous = "0.14.2"
 ujson = ">=5.4.0"

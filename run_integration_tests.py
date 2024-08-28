@@ -45,7 +45,6 @@ if __name__ == '__main__':
     container_name = "minio_server"
     result = is_container_running(container_name)
     print(result)
-    print(os.environ)
     if result or 'GITHUB_ACTIONS' in os.environ:
         rc = run_command(['poetry', 'run', 'pytest', 'tests/integration'],env=os.environ)
         raise SystemExit(rc)

@@ -5,6 +5,7 @@ import io
 import os.path
 import random
 import unittest
+import sys
 from copy import deepcopy
 
 import boto3
@@ -149,15 +150,18 @@ class TestTapS3Csv(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        s3_client = boto3.client("s3")
+        # Remove test file from bucket
+        s3_client = boto3.client(
+            "s3", endpoint_url=cls.config["aws_endpoint_url"]
+        )
         s3_client.delete_object(Bucket=cls.config["bucket"], Key=cls.obj_name)
 
     def test_discovery(self):
-        f = io.StringIO()
-        with contextlib.redirect_stdout(f):
+        file_buffer = io.StringIO()
+        with contextlib.redirect_stdout(file_buffer):
             do_discover(self.config)
 
-        catalog = ujson.loads(f.getvalue())
+        catalog = ujson.loads(file_buffer.getvalue())
 
         self.assertIsInstance(catalog, dict)
         self.assertEqual(1, len(catalog["streams"]))
@@ -188,12 +192,14 @@ class TestTapS3Csv(unittest.TestCase):
         # set stream to selected
         catalog["streams"][0]["metadata"][0]["metadata"]["selected"] = True
 
-        f = io.StringIO()
-        with contextlib.redirect_stdout(f):
+        file_buffer = io.TextIOWrapper(io.BytesIO(), sys.stdout.encoding)
+        with contextlib.redirect_stdout(file_buffer):
             do_sync(self.config, catalog, {})
 
+        # Position at the start of the buffer
+        file_buffer.seek(0)
         lines = [
-            ujson.loads(line) for line in f.getvalue().strip().splitlines()
+            ujson.loads(line) for line in file_buffer.read().strip().splitlines()
         ]
 
         self.assertDictEqual({"type": "STATE", "value": {}}, lines[0])
