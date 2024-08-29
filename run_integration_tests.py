@@ -44,7 +44,6 @@ def run_command(command, env=None):
         print("FileNotFound Error")
         result = False
     except CalledProcessError as exc:
-        print("Got Here")
         result = False
     return result
 
@@ -62,7 +61,7 @@ if __name__ == '__main__':
 
     if result or 'GITHUB_ACTIONS' in os.environ:
         rc = run_command(['poetry', 'run', 'pytest', 'tests/integration'],env=os.environ)
-        raise SystemExit(rc)
+        raise SystemExit(rc.returncode)
     else:
         print('Skipping Integration Tests - minio is not running')
         print('-------------------------------------------------')
