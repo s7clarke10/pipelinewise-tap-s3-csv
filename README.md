@@ -107,9 +107,10 @@ The `table` field consists of one or more objects, that describe how to find fil
 - **table_name**: This value is a string of your choosing, and will be used to name the stream that records are emitted under for files matching content.
 - **key_properties**: These are the "primary keys" of the CSV files, to be used by the target for deduplication and primary key definitions downstream in the destination.
 - **date_overrides**: Specifies field names in the files that are supposed to be parsed as a datetime. The tap doesn't attempt to automatically determine if a field is a datetime, so this will make it explicit in the discovered schema.
+- **datatype_overrides**: A object / dictionary of header names in the file and any override datatype other than string you with to set as the datatype. Example config - ``` "datatype_overrides":{"administration_number":"integer","percentage":"number","grade":"integer"}```.
 - **delimiter**: This allows you to specify a custom delimiter, such as `\t` or `|`, if that applies to your files.
-- **string_overrides**: Specifies field names in the files that should be parsed as a string regardless of what was discovered.
-- **guess_types**: (default `True`) By default, column data types will be determined via scanning the first file in a table_spec. Set this to `False` to disable this and set all columns to `string`.
+- **string_overrides**: **Deprecated** .Specifies field names in the files that should be parsed as a string regardless of what was discovered.
+- **guess_types**: **Deprecated**. (default `True`) By default, column data types will be determined via scanning the first file in a table_spec. Set this to `False` to disable this and set all columns to `string`.
 - **remove_character**: Specifies a character which can be removed from each line in the the file e.g. `"\""` will remove all double-quotes.
 - **encoding**: The encoding to use to read these files from [codecs -> Standard Encodings](https://docs.python.org/3/library/codecs.html#standard-encodings)
 
@@ -134,6 +135,10 @@ Followed by a run of unit tests:
 
 ```bash
 poetry run tox
+
+# Or to run for the current python instance
+
+poetry run -e py 
 ```
 
 These must pass in order for PR's to be merged.
@@ -151,6 +156,11 @@ UID=$(id -u) GID=$(id -g) docker-compose up -d
 Run integration tests:
 ```shell
   make integration_tests
+```
+
+or
+```shell
+  poetry run tox
 ```
 
 ### To run pylint:
