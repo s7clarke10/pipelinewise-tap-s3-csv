@@ -140,6 +140,7 @@ def generate_schema(samples: List[Dict], table_spec: Dict) -> Dict:
     """
     schema = {}
     date_overrides = set(table_spec.get("date_overrides", []))
+    datatype_overrides = set(table_spec.get("datatype_overrides", []))
 
     for sample in samples:
         for header in sample.keys():
@@ -147,6 +148,12 @@ def generate_schema(samples: List[Dict], table_spec: Dict) -> Dict:
 
             if header in date_overrides:
                 schema[header]["format"] = "date-time"  # type: ignore
+
+            if header in datatype_overrides:
+                schema[header]["type"] = [
+                    "null",
+                    table_spec["datatype_overrides"][header],
+                ]  # type: ignore
 
     return schema
 

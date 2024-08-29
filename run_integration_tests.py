@@ -3,7 +3,7 @@ import os
 import docker
 import logging
 
-from subprocess import call, Popen, run
+from subprocess import run, CalledProcessError
 
 # check_container.py
 from typing import Optional
@@ -38,13 +38,28 @@ def run_command(command, env=None):
         Return: returncode of executed program.
     """
     logging.debug("Command: {}".format(command))
-    result = run(command, env=env, shell=False, capture_output=False)
+    try:
+        result = run(command, env=env, shell=False, capture_output=False, check=True)
+    except FileNotFoundError as bad_cmd:
+        print("FileNotFound Error")
+        result = False
+    except CalledProcessError as exc:
+        print("Got Here")
+        result = False
+    return result
 
 
 if __name__ == '__main__':
-    container_name = "minio_server"
-    result = is_container_running(container_name)
-    print(result)
+    
+    # Check if docker is available
+    rc = run_command(['docker', 'info'],env=os.environ)
+    if rc:
+        # Check if the Minio Server is running
+        container_name = "minio_server"
+        result = is_container_running(container_name)
+    else:
+        result = False
+
     if result or 'GITHUB_ACTIONS' in os.environ:
         rc = run_command(['poetry', 'run', 'pytest', 'tests/integration'],env=os.environ)
         raise SystemExit(rc)

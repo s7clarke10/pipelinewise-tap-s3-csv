@@ -4,8 +4,8 @@ import contextlib
 import io
 import os.path
 import random
-import unittest
 import sys
+import unittest
 from copy import deepcopy
 
 import boto3
@@ -199,7 +199,8 @@ class TestTapS3Csv(unittest.TestCase):
         # Position at the start of the buffer
         file_buffer.seek(0)
         lines = [
-            ujson.loads(line) for line in file_buffer.read().strip().splitlines()
+            ujson.loads(line)
+            for line in file_buffer.read().strip().splitlines()
         ]
 
         self.assertDictEqual({"type": "STATE", "value": {}}, lines[0])
