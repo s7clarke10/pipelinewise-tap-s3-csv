@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import io
 import unittest
@@ -8,16 +10,16 @@ from tap_s3_csv import do_discover
 
 class InitTestCase(unittest.TestCase):
 
-    @patch('tap_s3_csv.discover_streams')
+    @patch("tap_s3_csv.discover_streams")
     def test_do_discover(self, discover_streams):
-        discover_streams.return_value = [{'stream': '1'}, {'stream': '2'}]
+        discover_streams.return_value = [{"stream": "1"}, {"stream": "2"}]
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
             do_discover({})
 
         self.assertEqual(
-"""{
+            """{
   "streams": [
     {
       "stream": "1"
@@ -26,4 +28,6 @@ class InitTestCase(unittest.TestCase):
       "stream": "2"
     }
   ]
-}""", f.getvalue())
+}""",
+            f.getvalue(),
+        )
