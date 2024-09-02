@@ -37,7 +37,7 @@ more_itertools = ">=8.12,<10.5"
 
 [tool.poetry.dev-dependencies]
 ipdb = "0.13.13"
-pylint = "3.2.5"
+pylint = "3.2.7"
 pytest-cov = "5.*"
 coverage = ">= 6.3, < 8.0"
 ipython = "^8.12.1"
