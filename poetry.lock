@@ -132,17 +132,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.35.8"
+version = "1.35.44"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.35.8-py3-none-any.whl", hash = "sha256:06eac4757de2a9c6020381205cb902f05964caad80b56e58c8931284a133b4cb"},
-    {file = "boto3-1.35.8.tar.gz", hash = "sha256:b9587131372a808bf6f99c5ed8b11be55cd113261cc3b437a917b4acc6c30bfe"},
+    {file = "boto3-1.35.44-py3-none-any.whl", hash = "sha256:18416d07b41e6094101a44f8b881047dcec6b846dad0b9f83b9bbf2f0cd93d07"},
+    {file = "boto3-1.35.44.tar.gz", hash = "sha256:7f8e8a252458d584d8cf7877c372c4f74ec103356eedf43d2dd9e479f47f3639"},
 ]
 
 [package.dependencies]
-botocore = ">=1.35.8,<1.36.0"
+botocore = ">=1.35.44,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -151,13 +151,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.35.9"
+version = "1.35.44"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.35.9-py3-none-any.whl", hash = "sha256:92962460e4f35d139a23bca28149722030143257ee2916de442243c2464a7434"},
-    {file = "botocore-1.35.9.tar.gz", hash = "sha256:9e44572fd2401b89dd58bf8b71ac2c36d5b0437f8cbf40de83302c499965fb54"},
+    {file = "botocore-1.35.44-py3-none-any.whl", hash = "sha256:55388e80624401d017a9a2b8109afd94814f7e666b53e28fce51375cfa8d9326"},
+    {file = "botocore-1.35.44.tar.gz", hash = "sha256:1fcd97b966ad8a88de4106fe1bd3bbd6d8dadabe99bbd4a6aadcf11cb6c66b39"},
 ]
 
 [package.dependencies]
@@ -169,7 +169,7 @@ urllib3 = [
 ]
 
 [package.extras]
-crt = ["awscrt (==0.21.2)"]
+crt = ["awscrt (==0.22.0)"]
 
 [[package]]
 name = "cachetools"
@@ -1766,4 +1766,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.13"
-content-hash = "4e2560b169b482c2c87df45657f42d5fb99ab26f4d0670c2104f1144067305ee"
+content-hash = "9842518cb476c784c906ad6077edac23945d39a1406ec290b244f3ce5dabf372"
