@@ -20,6 +20,8 @@ from singer_encodings.csv import (  # pylint:disable=no-name-in-module
     get_row_iterators,
 )
 
+from tap_s3_csv import jsonl  # pylint:disable=wrong-import-position
+
 LOGGER = get_logger("tap_s3_csv")
 
 SDC_SOURCE_BUCKET_COLUMN = "_sdc_source_bucket"
@@ -187,9 +189,16 @@ def row_iterators_for_table(file_handle, table_spec: Dict, s3_path: str) -> Gene
     Goes through singer_encodings' compression layer, so gzip and zip are
     inferred from the file name and the parser sees plain text. A zip archive
     yields one row iterator per member, a plain or gzipped file yields one.
+    The parser comes from the table's "format": CSV by default, JSON lines
+    when it says "jsonl".
     """
     options = {**table_spec, "file_name": s3_path}
-    return get_row_iterators(
+    reader = (
+        jsonl.get_row_iterators
+        if table_spec.get("format", "csv") == "jsonl"
+        else get_row_iterators
+    )
+    return reader(
         file_handle._raw_stream,  # pylint:disable=protected-access
         options=options,
         infer_compression=True,
