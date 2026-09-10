@@ -19,9 +19,6 @@ from singer import (
     write_record,
     write_state,
 )
-from singer_encodings.csv import (  # pylint:disable=no-name-in-module
-    get_row_iterator,
-)
 
 from tap_s3_csv import s3
 
@@ -123,32 +120,32 @@ def sync_table_file(
     # need to be fixed. The other consequence of this could be larger
     # memory consumption but that's acceptable as well.
     csv.field_size_limit(sys.maxsize)
-    iterator = get_row_iterator(
-        s3_file_handle._raw_stream, table_spec
-    )  # pylint:disable=protected-access
+    # Through the compression layer, so gzipped and zipped files sync correctly.
+    iterators = s3.row_iterators_for_table(s3_file_handle, table_spec, s3_path)
 
     records_synced = 0
 
-    for row in iterator:
-        time_extracted = utils.now()
+    for iterator in iterators:
+        for row in iterator:
+            time_extracted = utils.now()
 
-        custom_columns = {
-            s3.SDC_SOURCE_BUCKET_COLUMN: bucket,
-            s3.SDC_SOURCE_FILE_COLUMN: s3_path,
-            # index zero, +1 for header row
-            s3.SDC_SOURCE_LINENO_COLUMN: records_synced + 2,
-        }
-        if config.get("set_empty_values_null", False):
-            row = set_empty_values_null(row)
+            custom_columns = {
+                s3.SDC_SOURCE_BUCKET_COLUMN: bucket,
+                s3.SDC_SOURCE_FILE_COLUMN: s3_path,
+                # index zero, +1 for header row
+                s3.SDC_SOURCE_LINENO_COLUMN: records_synced + 2,
+            }
+            if config.get("set_empty_values_null", False):
+                row = set_empty_values_null(row)
 
-        rec = {**row, **custom_columns}
+            rec = {**row, **custom_columns}
 
-        with Transformer() as transformer:
-            to_write = transformer.transform(
-                rec, stream["schema"], metadata.to_map(stream["metadata"])
-            )
+            with Transformer() as transformer:
+                to_write = transformer.transform(
+                    rec, stream["schema"], metadata.to_map(stream["metadata"])
+                )
 
-        write_record(table_name, to_write, time_extracted=time_extracted)
-        records_synced += 1
+            write_record(table_name, to_write, time_extracted=time_extracted)
+            records_synced += 1
 
     return records_synced
