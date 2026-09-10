@@ -114,6 +114,8 @@ The `table` field consists of one or more objects, that describe how to find fil
 - **remove_character**: Specifies a character which can be removed from each line in the the file e.g. `"\""` will remove all double-quotes.
 - **encoding**: The encoding to use to read these files from [codecs -> Standard Encodings](https://docs.python.org/3/library/codecs.html#standard-encodings)
 
+- **format**: `csv` (default) or `jsonl`. With `jsonl`, each line of the file is read as one JSON object. Compression is inferred from the file name for both formats, so `.jsonl.gz` works.
+
 A sample configuration is available inside [config.sample.json](config.sample.json)
 
 ### To run tests:

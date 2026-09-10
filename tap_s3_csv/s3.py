@@ -17,8 +17,10 @@ from botocore.exceptions import ClientError
 from singer import get_logger, utils
 from singer_encodings.csv import (  # pylint:disable=no-name-in-module
     SDC_EXTRA_COLUMN,
-    get_row_iterator,
+    get_row_iterators,
 )
+
+from tap_s3_csv import jsonl  # pylint:disable=wrong-import-position
 
 LOGGER = get_logger("tap_s3_csv")
 
@@ -180,6 +182,29 @@ def merge_dicts(first: Dict, second: Dict) -> Dict:
     return to_return
 
 
+def row_iterators_for_table(file_handle, table_spec: Dict, s3_path: str) -> Generator:
+    """
+    Open an S3 file for reading rows.
+
+    Goes through singer_encodings' compression layer, so gzip and zip are
+    inferred from the file name and the parser sees plain text. A zip archive
+    yields one row iterator per member, a plain or gzipped file yields one.
+    The parser comes from the table's "format": CSV by default, JSON lines
+    when it says "jsonl".
+    """
+    options = {**table_spec, "file_name": s3_path}
+    reader = (
+        jsonl.get_row_iterators
+        if table_spec.get("format", "csv") == "jsonl"
+        else get_row_iterators
+    )
+    return reader(
+        file_handle._raw_stream,  # pylint:disable=protected-access
+        options=options,
+        infer_compression=True,
+    )
+
+
 def sample_file(
     config: Dict, table_spec: Dict, s3_path: str, sample_rate: int
 ) -> Generator:
@@ -192,43 +217,39 @@ def sample_file(
     :return: generator containing the samples as dictionaries
     """
     file_handle = get_file_handle(config, s3_path)
-    # _raw_stream seems like the wrong way to access this..
-    iterator = get_row_iterator(
-        file_handle._raw_stream, table_spec
-    )  # pylint:disable=protected-access
+    iterators = row_iterators_for_table(file_handle, table_spec, s3_path)
 
     current_row = 0
 
     sampled_row_count = 0
 
-    headers = []
-    if iterator.fieldnames:
-        headers = iterator.fieldnames
+    for iterator in iterators:
+        headers = getattr(iterator, "fieldnames", None) or []
 
-    has_rows = False
+        has_rows = False
 
-    for row in iterator:
-        has_rows = True
-        if (current_row % sample_rate) == 0:
-            if row.get(SDC_EXTRA_COLUMN):
-                row.pop(SDC_EXTRA_COLUMN)
-            sampled_row_count += 1
-            if (sampled_row_count % 200) == 0:
+        for row in iterator:
+            has_rows = True
+            if (current_row % sample_rate) == 0:
+                if row.get(SDC_EXTRA_COLUMN):
+                    row.pop(SDC_EXTRA_COLUMN)
+                sampled_row_count += 1
+                if (sampled_row_count % 200) == 0:
+                    LOGGER.info(
+                        "Sampled %s rows from %s", sampled_row_count, s3_path
+                    )
+                yield row
+
+            current_row += 1
+
+        if not has_rows:
+            if headers:
                 LOGGER.info(
-                    "Sampled %s rows from %s", sampled_row_count, s3_path
+                    "No records, just empty file with headers. Yielding header "
+                    "row to create an empty file"
                 )
-            yield row
-
-        current_row += 1
-
-    if not has_rows:
-        if headers:
-            LOGGER.info(
-                "No records, just empty file with headers. Yielding header "
-                "row to create an empty file"
-            )
-            row = dict.fromkeys(headers)
-            yield row
+                row = dict.fromkeys(headers)
+                yield row
 
     LOGGER.info("Sampled %s rows from %s", sampled_row_count, s3_path)
 

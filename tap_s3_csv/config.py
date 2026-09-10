@@ -4,7 +4,7 @@ Tap configuration related stuff
 
 from __future__ import annotations
 
-from voluptuous import Optional, Required, Schema
+from voluptuous import Any, Optional, Required, Schema
 
 CONFIG_CONTRACT = Schema(
     [
@@ -22,6 +22,8 @@ CONFIG_CONTRACT = Schema(
             Optional("remove_character"): str,
             Optional("s3_proxies"): object,
             Optional("encoding"): str,
+            # "csv" (default) or "jsonl", one JSON object per line.
+            Optional("format"): Any("csv", "jsonl"),
             Optional("set_empty_values_null"): bool,
         }
     ]
